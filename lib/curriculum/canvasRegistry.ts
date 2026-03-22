@@ -51,4 +51,8 @@ export const canvasRegistry: Record<string, AnyCanvasComponent> = {
     () => import('@/components/canvases/geometry/CompositeShapeCanvas').then((m) => m.CompositeShapeCanvas),
     { ssr: false }
   ),
+  CoordinateGeometryCanvas: dynamic(
+    () => import('@/components/canvases/geometry/CoordinateGeometryCanvas').then((m) => m.CoordinateGeometryCanvas),
+    { ssr: false }
+  ),
 };
