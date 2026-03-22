@@ -9,12 +9,22 @@ export interface NarrativeContext {
   realWorldConnection: string;
 }
 
+/** A named wrong-answer pattern — detected and shown immediately after a bad numeric submission */
+export interface ErrorPattern {
+  match: (userAnswer: number) => boolean;
+  label: string;       // short name: "Added run + rise directly"
+  explanation: string; // one-sentence coaching shown to the student
+}
+
 export interface FormativeCheck {
   prompt: string;
   type: 'numeric' | 'multiple-choice' | 'drag-to-match';
   correctAnswer?: number;
-  tolerance?: number; // accept ± tolerance%
+  tolerance?: number;       // accept ± tolerance% (default 10)
   choices?: { label: string; correct: boolean }[];
+  errorPatterns?: ErrorPattern[];  // numeric checks: named wrong-answer detectors
+  solutionReveal?: string;         // shown verbatim after all hints exhausted + stuck
+  hints?: string[];                // per-check hints (for extraChecks; phases use phase-level hints)
 }
 
 export interface GuidedStep {
@@ -23,20 +33,30 @@ export interface GuidedStep {
 }
 
 export interface GuidedExample {
-  intro: string;        // "Before you try it, let's walk through one together"
+  intro: string;
   steps: GuidedStep[];
-  completionMessage: string; // shown after last step before "Now you try"
+  completionMessage: string;
 }
 
 export interface CPAPhaseConfig {
   phase: CPAPhase;
   instructionText: string;
-  canvasComponent: string; // key in canvas registry
+  canvasComponent: string;
   canvasInitialState: Record<string, unknown>;
   formativeCheck: FormativeCheck;
-  hint?: string;           // single hint (legacy / simple phases)
-  hints?: string[];        // 3-level progressive hints: what → first step → full solution
+  extraChecks?: FormativeCheck[];  // additional practice problems; all shown before advancing
+  passThreshold?: number;          // min correct to meet mastery (default 1); never blocks
+  hint?: string;
+  hints?: string[];                // 3-level progressive hints for the primary formativeCheck
   guidedExample?: GuidedExample;
+}
+
+/** Shown after all 3 CPA phases complete — connects the three representations */
+export interface PhaseBridgeSummary {
+  buildItCaption: string;  // what the concrete phase did
+  seeItCaption: string;    // what the visual phase revealed
+  ownItCaption: string;    // the formula / rule
+  keyInsight: string;      // 2-sentence synthesis of all three
 }
 
 export interface Lesson {
@@ -46,6 +66,7 @@ export interface Lesson {
   narrative: NarrativeContext;
   estimatedMinutes: number;
   phases: CPAPhaseConfig[];
+  phaseBridge?: PhaseBridgeSummary;
 }
 
 export interface CurriculumTopic {
@@ -57,6 +78,6 @@ export interface CurriculumTopic {
   standards: string[];
   lessons: Lesson[];
   prerequisiteTopicIds: string[];
-  icon: string; // emoji or icon name
-  color: string; // tailwind color class suffix
+  icon: string;
+  color: string;
 }

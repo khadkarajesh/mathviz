@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CPAPhase } from '@/types/curriculum';
-import { StudentProgress } from '@/types/progress';
+import { StudentProgress, ReviewDueLesson } from '@/types/progress';
 
 const STORAGE_KEY = 'mathviz_progress_v1';
+const THREE_DAYS_MS  = 3  * 24 * 60 * 60 * 1000;
+const TEN_DAYS_MS    = 10 * 24 * 60 * 60 * 1000;
 
 function defaultProgress(): StudentProgress {
   return { version: 1, lessons: {}, topics: {} };
@@ -44,14 +46,17 @@ export function useLocalProgress() {
           completed: true,
           completedAt: new Date().toISOString(),
         };
-        // If all 3 phases done, mark lesson complete
+        // When all 3 phases done for the first time, schedule spaced reviews
         const lesson = next.lessons[lessonId];
         const allDone =
           lesson.phases.concrete?.completed &&
           lesson.phases.visual?.completed &&
           lesson.phases.abstract?.completed;
         if (allDone && !lesson.completedAt) {
-          lesson.completedAt = new Date().toISOString();
+          const now = new Date();
+          lesson.completedAt = now.toISOString();
+          lesson.reviewDueAt = new Date(now.getTime() + THREE_DAYS_MS).toISOString();
+          lesson.secondReviewDueAt = new Date(now.getTime() + TEN_DAYS_MS).toISOString();
         }
         save(next);
         return next;
@@ -81,11 +86,30 @@ export function useLocalProgress() {
     [isLessonComplete]
   );
 
+  /** Returns lessons whose first or second review window has passed */
+  const getReviewDueLessons = useCallback((): ReviewDueLesson[] => {
+    const now = new Date();
+    const due: ReviewDueLesson[] = [];
+    for (const [lessonId, lesson] of Object.entries(progress.lessons)) {
+      if (!lesson.completedAt) continue;
+      const r1 = lesson.reviewDueAt       ? new Date(lesson.reviewDueAt)       : null;
+      const r2 = lesson.secondReviewDueAt ? new Date(lesson.secondReviewDueAt) : null;
+      const dueDate = (r1 && r1 <= now) ? r1 : (r2 && r2 <= now) ? r2 : null;
+      if (dueDate) {
+        due.push({ lessonId, topicId: lesson.topicId, reviewDueAt: dueDate.toISOString() });
+      }
+    }
+    return due.sort(
+      (a, b) => new Date(a.reviewDueAt).getTime() - new Date(b.reviewDueAt).getTime()
+    );
+  }, [progress]);
+
   return {
     progress,
     markPhaseComplete,
     isPhaseComplete,
     isLessonComplete,
     getLessonsCompletedForTopic,
+    getReviewDueLessons,
   };
 }

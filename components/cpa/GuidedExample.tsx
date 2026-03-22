@@ -125,7 +125,7 @@ export function GuidedExample({ guided, canvasSlot, onComplete }: GuidedExampleP
 
         {/* Canvas — live and interactive during the walkthrough */}
         <div
-          className="rounded-xl border overflow-hidden"
+          className="rounded-xl border"
           style={{ background: 'var(--surface)', borderColor: 'var(--border)', minHeight: 360 }}
         >
           {canvasSlot}

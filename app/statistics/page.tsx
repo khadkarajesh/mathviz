@@ -1,5 +1,6 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { TopicCard } from '@/components/layout/TopicCard';
+import { ReviewSection } from '@/components/cpa/ReviewSection';
 import { getTopicsBySubject } from '@/lib/curriculum';
 
 export default function StatisticsHubPage() {
@@ -14,6 +15,7 @@ export default function StatisticsHubPage() {
           Data, distributions, relationships, and probability — explored through real datasets.
         </p>
       </div>
+      <ReviewSection subject="statistics" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {topics.map((topic) => (
           <TopicCard key={topic.id} topic={topic} lessonsCompleted={0} />

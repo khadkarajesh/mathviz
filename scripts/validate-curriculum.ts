@@ -89,7 +89,6 @@ function checkGuidedStepText(text: string, location: string) {
 
 function checkNoCoordReuse(phase: CPAPhaseConfig, location: string) {
   if (!phase.guidedExample || phase.canvasComponent !== 'CoordinateGeometryCanvas') return;
-  if (phase.formativeCheck.type !== 'numeric') return;
 
   const guidedCoords = new Set<string>();
   for (const step of phase.guidedExample.steps) {
@@ -98,15 +97,24 @@ function checkNoCoordReuse(phase: CPAPhaseConfig, location: string) {
     }
   }
 
-  for (const pair of extractCoordPairs(phase.formativeCheck.prompt)) {
-    if (guidedCoords.has(pair)) {
-      const [x, y] = pair.split(',');
-      fail(
-        `${location} → formativeCheck.prompt`,
-        `Coordinate (${x}, ${y}) was already used in the guided example — practice must use different coordinates.`
-      );
+  function checkPrompt(prompt: string, label: string) {
+    for (const pair of extractCoordPairs(prompt)) {
+      if (guidedCoords.has(pair)) {
+        const [x, y] = pair.split(',');
+        fail(label, `Coordinate (${x}, ${y}) was already used in the guided example — practice must use different coordinates.`);
+      }
     }
   }
+
+  if (phase.formativeCheck.type === 'numeric') {
+    checkPrompt(phase.formativeCheck.prompt, `${location} → formativeCheck.prompt`);
+  }
+
+  phase.extraChecks?.forEach((ec, i) => {
+    if (ec.type === 'numeric') {
+      checkPrompt(ec.prompt, `${location} → extraChecks[${i}].prompt`);
+    }
+  });
 }
 
 // ── Phase validator ───────────────────────────────────────────────────────────
@@ -136,6 +144,15 @@ function validatePhase(phase: CPAPhaseConfig, location: string) {
       phase.formativeCheck.prompt,
       `${location} → formativeCheck.prompt`
     );
+  }
+
+  // 3b. Extra checks — same bounds check
+  if (phase.extraChecks && phase.canvasComponent === 'CoordinateGeometryCanvas') {
+    phase.extraChecks.forEach((ec, i) => {
+      if (ec.type === 'numeric') {
+        checkGuidedStepText(ec.prompt, `${location} → extraChecks[${i}].prompt`);
+      }
+    });
   }
 
   // 4. Practice problem must not reuse guided example coordinates

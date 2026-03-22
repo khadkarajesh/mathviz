@@ -1,5 +1,6 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { TopicCard } from '@/components/layout/TopicCard';
+import { ReviewSection } from '@/components/cpa/ReviewSection';
 import { getTopicsBySubject } from '@/lib/curriculum';
 
 export default function GeometryHubPage() {
@@ -14,6 +15,7 @@ export default function GeometryHubPage() {
           Shapes, measurement, transformations, and spatial reasoning — all through interaction.
         </p>
       </div>
+      <ReviewSection subject="geometry" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {topics.map((topic) => (
           <TopicCard key={topic.id} topic={topic} lessonsCompleted={0} />

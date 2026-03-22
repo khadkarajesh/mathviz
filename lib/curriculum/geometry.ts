@@ -372,15 +372,50 @@ export const geometryTopics: CurriculumTopic[] = [
               completionMessage: 'You found it! A(0,0) to B(3,4) is a distance of 5 units — a classic 3-4-5 right triangle.',
             },
             formativeCheck: {
-              prompt: 'Now you try: move A to (0, 0) and B to (3, 4). What is the straight-line distance?',
+              prompt: 'Your turn: move A to (−3, 0) and B to (1, 3). What is the straight-line distance?',
               type: 'numeric',
               correctAnswer: 5,
               tolerance: 5,
+              errorPatterns: [
+                {
+                  match: (a) => a === 7,
+                  label: 'Added run + rise directly',
+                  explanation: 'run + rise gives the sum of two sides of the triangle. The straight-line distance is the hypotenuse — use √(run² + rise²), not run + rise.',
+                },
+                {
+                  match: (a) => Math.abs(a - 25) < 0.5,
+                  label: 'Forgot to take the square root',
+                  explanation: 'You correctly found run² + rise² = 25, but the distance is √25 = 5, not 25 itself.',
+                },
+              ],
+              solutionReveal: 'run = 1 − (−3) = 4. rise = 3 − 0 = 3. d = √(4² + 3²) = √(16 + 9) = √25 = 5.',
             },
+            extraChecks: [
+              {
+                prompt: 'Now try: A at (1, 0) and B at (4, 4). What is the straight-line distance?',
+                type: 'numeric',
+                correctAnswer: 5,
+                tolerance: 5,
+                hints: [
+                  'Count the horizontal squares (run) and vertical squares (rise), then use √(run² + rise²).',
+                  'run = 4 − 1 = 3. rise = 4 − 0 = 4. Apply d = √(run² + rise²).',
+                  'd = √(3² + 4²) = √(9 + 16) = √25 = 5.',
+                ],
+                errorPatterns: [
+                  {
+                    match: (a) => a === 7,
+                    label: 'Added run + rise directly',
+                    explanation: 'The hypotenuse is not run + rise. Square each one, add, then take the square root.',
+                  },
+                ],
+                solutionReveal: 'run = 4 − 1 = 3. rise = 4 − 0 = 4. d = √(3² + 4²) = √(9 + 16) = √25 = 5.',
+              },
+            ],
+            passThreshold: 1,
             hints: [
               'You are looking for the straight-line distance — the shortest path directly from A to B, not going around the edges.',
               'Count the run (horizontal squares) and rise (vertical squares) between the points. Then use the Pythagorean theorem: distance = √(run² + rise²).',
-              'run = 3, rise = 4. distance = √(3² + 4²) = √(9 + 16) = √25 = 5.',
+              'run = 1−(−3) = 4, rise = 3−0 = 3. distance = √(4² + 3²) = √(16 + 9) = √25 = 5.',
             ],
           },
           {
@@ -393,7 +428,30 @@ export const geometryTopics: CurriculumTopic[] = [
               type: 'numeric',
               correctAnswer: 5,
               tolerance: 5,
+              errorPatterns: [
+                {
+                  match: (a) => a === 7,
+                  label: 'Added run + rise directly',
+                  explanation: 'Look at the canvas — the run and rise labels show the two legs. Use √(run² + rise²) to get the hypotenuse.',
+                },
+              ],
+              solutionReveal: 'Read from the canvas: run = 3, rise = 4. d = √(3² + 4²) = √(9 + 16) = √25 = 5.',
             },
+            extraChecks: [
+              {
+                prompt: 'Move A to (−2, 0) and B to (2, 3). What is the distance?',
+                type: 'numeric',
+                correctAnswer: 5,
+                tolerance: 5,
+                hints: [
+                  'Read the run and rise from the canvas labels, then apply d = √(run² + rise²).',
+                  'run = 2 − (−2) = 4. rise = 3 − 0 = 3.',
+                  'd = √(4² + 3²) = √(16 + 9) = √25 = 5.',
+                ],
+                solutionReveal: 'run = 4, rise = 3. d = √(16 + 9) = √25 = 5.',
+              },
+            ],
+            passThreshold: 1,
             hints: [
               'Look at the dashed lines — they show you the run (horizontal) and rise (vertical) automatically.',
               'Read the run and rise labels on the canvas, then apply: distance = √(run² + rise²).',
@@ -410,7 +468,42 @@ export const geometryTopics: CurriculumTopic[] = [
               type: 'numeric',
               correctAnswer: 5,
               tolerance: 5,
+              errorPatterns: [
+                {
+                  match: (a) => a === 7,
+                  label: 'Added the differences instead of using Pythagoras',
+                  explanation: '(1−(−3)) + (4−1) = 4 + 3 = 7, but that is run + rise, not distance. Use √(4² + 3²) = 5.',
+                },
+                {
+                  match: (a) => Math.abs(a - 25) < 0.5,
+                  label: 'Forgot to take the square root',
+                  explanation: '4² + 3² = 25. Distance = √25 = 5, not 25.',
+                },
+              ],
+              solutionReveal: 'x₂ − x₁ = 1 − (−3) = 4. y₂ − y₁ = 4 − 1 = 3. d = √(4² + 3²) = √25 = 5.',
             },
+            extraChecks: [
+              {
+                prompt: 'Two construction posts are at (−2, −1) and (4, 2). What is the distance between them?',
+                type: 'numeric',
+                correctAnswer: 6.71,
+                tolerance: 5,
+                hints: [
+                  'Plug into d = √((x₂−x₁)² + (y₂−y₁)²). Identify x₁, y₁, x₂, y₂ first.',
+                  'x₂ − x₁ = 4 − (−2) = 6. y₂ − y₁ = 2 − (−1) = 3. Now apply d = √(6² + 3²).',
+                  'd = √(36 + 9) = √45 ≈ 6.71.',
+                ],
+                errorPatterns: [
+                  {
+                    match: (a) => a === 9,
+                    label: 'Added the differences directly',
+                    explanation: '6 + 3 = 9 is run + rise. Distance = √(6² + 3²) = √45 ≈ 6.71.',
+                  },
+                ],
+                solutionReveal: 'run = 4 − (−2) = 6. rise = 2 − (−1) = 3. d = √(6² + 3²) = √(36 + 9) = √45 ≈ 6.71.',
+              },
+            ],
+            passThreshold: 2,
             hints: [
               'You need the straight-line distance between (−3, 1) and (1, 4). Use the distance formula.',
               'run = x₂ − x₁ = 1 − (−3) = 4. rise = y₂ − y₁ = 4 − 1 = 3. Apply d = √(run² + rise²).',
@@ -418,6 +511,12 @@ export const geometryTopics: CurriculumTopic[] = [
             ],
           },
         ],
+        phaseBridge: {
+          buildItCaption: 'You counted grid squares to find run and rise',
+          seeItCaption:   'The hidden right triangle appeared between the points',
+          ownItCaption:   'd = √((x₂−x₁)² + (y₂−y₁)²)',
+          keyInsight:     'Every straight-line distance is the hypotenuse of a right triangle whose legs are the run and rise. The distance formula is just the Pythagorean theorem written with coordinate notation.',
+        },
       },
       {
         id: 'coordinate-geometry-midpoint',
@@ -470,6 +569,23 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: '(2, 3)', correct: false },
               ],
             },
+            extraChecks: [
+              {
+                prompt: 'A is at (−4, 2) and B is at (2, −2). What are the coordinates of the midpoint?',
+                type: 'multiple-choice',
+                choices: [
+                  { label: '(−1, 0)', correct: true },
+                  { label: '(−1, 2)', correct: false },
+                  { label: '(1, 0)',  correct: false },
+                ],
+                hints: [
+                  'Average the x-values separately from the y-values.',
+                  'x: (−4 + 2) ÷ 2. y: (2 + (−2)) ÷ 2.',
+                  'x: −2 ÷ 2 = −1. y: 0 ÷ 2 = 0. Midpoint = (−1, 0).',
+                ],
+              },
+            ],
+            passThreshold: 1,
             hints: [
               'You are looking for the point that is exactly halfway between A(0,0) and B(6,4) — equal distance from both.',
               'Average the x-coordinates: (0 + 6) ÷ 2. Then average the y-coordinates: (0 + 4) ÷ 2. Those two results are your answer.',
@@ -490,6 +606,23 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: '(−2, 2)', correct: false },
               ],
             },
+            extraChecks: [
+              {
+                prompt: 'A(−5, −1) and B(3, 3). What is the midpoint?',
+                type: 'multiple-choice',
+                choices: [
+                  { label: '(−1, 1)', correct: true },
+                  { label: '(1, 1)',  correct: false },
+                  { label: '(−1, 0)', correct: false },
+                ],
+                hints: [
+                  'Average the x-coordinates, then average the y-coordinates separately.',
+                  'x: (−5 + 3) ÷ 2. y: (−1 + 3) ÷ 2.',
+                  'x: −2 ÷ 2 = −1. y: 2 ÷ 2 = 1. Midpoint = (−1, 1).',
+                ],
+              },
+            ],
+            passThreshold: 1,
             hints: [
               'You need the point exactly halfway between (−2, 4) and (6, 0).',
               'Average the x-values: (−2 + 6) ÷ 2. Average the y-values: (4 + 0) ÷ 2.',
@@ -510,6 +643,23 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: '(0, 4)', correct: false },
               ],
             },
+            extraChecks: [
+              {
+                prompt: 'Two lampposts are at (−3, 2) and (5, −2). A repair crew must reach the midpoint. Where is it?',
+                type: 'multiple-choice',
+                choices: [
+                  { label: '(1, 0)',  correct: true },
+                  { label: '(−1, 0)', correct: false },
+                  { label: '(1, 2)',  correct: false },
+                ],
+                hints: [
+                  'Use M = ((x₁+x₂)/2, (y₁+y₂)/2).',
+                  'x: (−3 + 5) ÷ 2. y: (2 + (−2)) ÷ 2.',
+                  'x: 2 ÷ 2 = 1. y: 0 ÷ 2 = 0. Midpoint = (1, 0).',
+                ],
+              },
+            ],
+            passThreshold: 2,
             hints: [
               'You need the midpoint of a segment from (−4, 1) to (4, 5). Use M = ((x₁+x₂)/2, (y₁+y₂)/2).',
               'x: (−4 + 4) ÷ 2 = ? y: (1 + 5) ÷ 2 = ?',
@@ -517,6 +667,12 @@ export const geometryTopics: CurriculumTopic[] = [
             ],
           },
         ],
+        phaseBridge: {
+          buildItCaption: 'You counted squares to find the halfway point on the grid',
+          seeItCaption:   'The green dot tracked the average position automatically',
+          ownItCaption:   'M = ((x₁+x₂)/2, (y₁+y₂)/2)',
+          keyInsight:     'The midpoint is the average of the two x-values and the average of the two y-values. Averaging always finds the middle — this works for any two numbers, not just coordinates.',
+        },
       },
       {
         id: 'coordinate-geometry-slope',
@@ -561,15 +717,50 @@ export const geometryTopics: CurriculumTopic[] = [
               completionMessage: 'Slope = rise ÷ run. Positive = uphill, negative = downhill, zero = flat. The bigger the number, the steeper the line.',
             },
             formativeCheck: {
-              prompt: 'A(0, 0) to B(4, 2): rise = 2, run = 4. What is the slope?',
+              prompt: 'Your turn: move A to (−2, 1) and B to (2, 3). What is the slope of that path?',
               type: 'numeric',
               correctAnswer: 0.5,
               tolerance: 10,
+              errorPatterns: [
+                {
+                  match: (a) => Math.abs(a - 2) < 0.1,
+                  label: 'Inverted rise and run (used run ÷ rise)',
+                  explanation: 'Slope is rise ÷ run (vertical over horizontal), not run ÷ rise. rise = 2, run = 4, so slope = 2 ÷ 4 = 0.5.',
+                },
+                {
+                  match: (a) => Math.abs(a - (-0.5)) < 0.1,
+                  label: 'Got the sign wrong',
+                  explanation: 'The line goes uphill from A to B, so slope is positive. Check: rise = 3−1 = +2 (going up). Slope = +2 ÷ 4 = +0.5.',
+                },
+              ],
+              solutionReveal: 'rise = 3 − 1 = 2. run = 2 − (−2) = 4. Slope = rise ÷ run = 2 ÷ 4 = 0.5.',
             },
+            extraChecks: [
+              {
+                prompt: 'Move A to (−3, 0) and B to (3, 2). What is the slope?',
+                type: 'numeric',
+                correctAnswer: 0.333,
+                tolerance: 10,
+                hints: [
+                  'Slope = rise ÷ run. Count the squares up (rise) and the squares right (run).',
+                  'rise = 2 − 0 = 2. run = 3 − (−3) = 6.',
+                  'Slope = 2 ÷ 6 = 1/3 ≈ 0.33.',
+                ],
+                errorPatterns: [
+                  {
+                    match: (a) => Math.abs(a - 3) < 0.1,
+                    label: 'Inverted rise and run',
+                    explanation: 'Slope = rise ÷ run = 2 ÷ 6, not 6 ÷ 2.',
+                  },
+                ],
+                solutionReveal: 'rise = 2 − 0 = 2. run = 3 − (−3) = 6. Slope = 2 ÷ 6 = 1/3 ≈ 0.33.',
+              },
+            ],
+            passThreshold: 1,
             hints: [
               'Slope tells you how steep the line is — how many squares it goes up for every square it goes right.',
               'Count the rise (squares up from A to B) and the run (squares right from A to B). Slope = rise ÷ run.',
-              'rise = 2 (B is 2 squares above A), run = 4 (B is 4 squares right of A). Slope = 2 ÷ 4 = 0.5.',
+              'rise = 3−1 = 2, run = 2−(−2) = 4. Slope = 2 ÷ 4 = 0.5.',
             ],
           },
           {
@@ -582,7 +773,42 @@ export const geometryTopics: CurriculumTopic[] = [
               type: 'numeric',
               correctAnswer: -1,
               tolerance: 5,
+              errorPatterns: [
+                {
+                  match: (a) => Math.abs(a - 1) < 0.1,
+                  label: 'Got the sign wrong',
+                  explanation: 'The line goes downhill (B is below A), so the slope is negative. rise = 0 − 4 = −4. Slope = −4 ÷ 4 = −1.',
+                },
+                {
+                  match: (a) => Math.abs(a - (-4)) < 0.2,
+                  label: 'Used rise but forgot to divide by run',
+                  explanation: 'Slope = rise ÷ run. rise = −4, run = 4. Divide: −4 ÷ 4 = −1.',
+                },
+              ],
+              solutionReveal: 'rise = 0 − 4 = −4. run = 4 − 0 = 4. Slope = −4 ÷ 4 = −1.',
             },
+            extraChecks: [
+              {
+                prompt: 'A trail goes from (−3, 1) to (3, −1). What is the slope?',
+                type: 'numeric',
+                correctAnswer: -0.333,
+                tolerance: 10,
+                hints: [
+                  'The trail goes downhill — B is below A — so expect a negative slope.',
+                  'rise = −1 − 1 = −2. run = 3 − (−3) = 6.',
+                  'Slope = −2 ÷ 6 = −1/3 ≈ −0.33.',
+                ],
+                errorPatterns: [
+                  {
+                    match: (a) => Math.abs(a - 0.333) < 0.05,
+                    label: 'Got the sign wrong',
+                    explanation: 'The line goes downhill so rise is negative. rise = −1 − 1 = −2. Slope = −2 ÷ 6 = −0.33.',
+                  },
+                ],
+                solutionReveal: 'rise = −1 − 1 = −2. run = 3 − (−3) = 6. Slope = −2 ÷ 6 = −1/3 ≈ −0.33.',
+              },
+            ],
+            passThreshold: 1,
             hints: [
               'The line is going downhill — B is lower than A — so the slope will be negative.',
               'rise = y₂ − y₁ = 0 − 4 = −4. run = x₂ − x₁ = 4 − 0 = 4. Slope = rise ÷ run.',
@@ -603,6 +829,28 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: 'Yes — slope = 2/6 = 1/2, exactly at the limit', correct: false },
               ],
             },
+            extraChecks: [
+              {
+                prompt: 'A road rises from (−4, 0) to (2, 3). What is the slope?',
+                type: 'numeric',
+                correctAnswer: 0.5,
+                tolerance: 10,
+                hints: [
+                  'Use m = (y₂−y₁) / (x₂−x₁).',
+                  'y₂ − y₁ = 3 − 0 = 3. x₂ − x₁ = 2 − (−4) = 6.',
+                  'Slope = 3 ÷ 6 = 0.5.',
+                ],
+                errorPatterns: [
+                  {
+                    match: (a) => Math.abs(a - 2) < 0.1,
+                    label: 'Inverted rise and run',
+                    explanation: 'Slope = rise ÷ run = 3 ÷ 6, not 6 ÷ 3.',
+                  },
+                ],
+                solutionReveal: 'rise = 3 − 0 = 3. run = 2 − (−4) = 6. Slope = 3 ÷ 6 = 0.5.',
+              },
+            ],
+            passThreshold: 2,
             hints: [
               'First calculate the slope of the ramp from (0,0) to (6,2). Then compare it to 1/2.',
               'Slope = (y₂−y₁)/(x₂−x₁) = (2−0)/(6−0) = 2/6. Simplify 2/6. Is it ≤ 1/2?',
@@ -610,6 +858,12 @@ export const geometryTopics: CurriculumTopic[] = [
             ],
           },
         ],
+        phaseBridge: {
+          buildItCaption: 'You counted rise and run between points on the grid',
+          seeItCaption:   'The extended dashed line showed how steepness continues in both directions',
+          ownItCaption:   'm = (y₂−y₁) / (x₂−x₁)',
+          keyInsight:     'Slope is how much a line rises for every 1 unit it moves right. Positive means uphill, negative means downhill, zero means flat. The formula captures this as rise ÷ run using exact coordinates.',
+        },
       },
     ],
   },
