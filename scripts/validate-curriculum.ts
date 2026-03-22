@@ -3,8 +3,10 @@
  *
  * Rules enforced:
  * 1. CoordinateGeometryCanvas: pointA and pointB in canvasInitialState must be within ±GRID_LIMIT
- * 2. Any canvas: numeric point fields (x, y) nested under recognisable point keys must be within ±GRID_LIMIT
- * 3. GuidedExample steps: coordinates mentioned in instruction text are extracted via regex and checked
+ * 2. GuidedExample steps: coordinates in instruction text must be within ±GRID_LIMIT
+ * 3. Formative check prompts (numeric, canvas-based): coordinates must be within ±GRID_LIMIT
+ * 4. No coordinate pair used in a guidedExample step may reappear in the same phase's
+ *    formativeCheck prompt — the practice problem must differ from the worked example.
  *
  * Exit code 1 if any violations found — causes `npm run build` to fail.
  */
@@ -60,6 +62,16 @@ function checkCanvasInitialState(
 
 const COORD_REGEX = /\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/g;
 
+function extractCoordPairs(text: string): Set<string> {
+  const pairs = new Set<string>();
+  for (const match of text.matchAll(COORD_REGEX)) {
+    const x = parseInt(match[1], 10);
+    const y = parseInt(match[2], 10);
+    pairs.add(`${x},${y}`);
+  }
+  return pairs;
+}
+
 function checkGuidedStepText(text: string, location: string) {
   for (const match of text.matchAll(COORD_REGEX)) {
     const x = parseInt(match[1], 10);
@@ -69,6 +81,30 @@ function checkGuidedStepText(text: string, location: string) {
     }
     if (Math.abs(y) > GRID_LIMIT) {
       fail(location, `Coordinate (${x}, ${y}) in text: y = ${y} exceeds ±${GRID_LIMIT}`);
+    }
+  }
+}
+
+// ── Rule 4: guided example coords must not reappear in practice prompt ────────
+
+function checkNoCoordReuse(phase: CPAPhaseConfig, location: string) {
+  if (!phase.guidedExample || phase.canvasComponent !== 'CoordinateGeometryCanvas') return;
+  if (phase.formativeCheck.type !== 'numeric') return;
+
+  const guidedCoords = new Set<string>();
+  for (const step of phase.guidedExample.steps) {
+    for (const pair of extractCoordPairs(step.instruction)) {
+      guidedCoords.add(pair);
+    }
+  }
+
+  for (const pair of extractCoordPairs(phase.formativeCheck.prompt)) {
+    if (guidedCoords.has(pair)) {
+      const [x, y] = pair.split(',');
+      fail(
+        `${location} → formativeCheck.prompt`,
+        `Coordinate (${x}, ${y}) was already used in the guided example — practice must use different coordinates.`
+      );
     }
   }
 }
@@ -101,6 +137,9 @@ function validatePhase(phase: CPAPhaseConfig, location: string) {
       `${location} → formativeCheck.prompt`
     );
   }
+
+  // 4. Practice problem must not reuse guided example coordinates
+  checkNoCoordReuse(phase, location);
 }
 
 // ── Topic validator ───────────────────────────────────────────────────────────
