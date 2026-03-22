@@ -342,33 +342,67 @@ export const geometryTopics: CurriculumTopic[] = [
         phases: [
           {
             phase: 'concrete',
-            instructionText: 'Drag bus stop A and bus stop B anywhere on the grid. Count the horizontal squares (run) and vertical squares (rise) between them. Can you find the straight-line distance by counting?',
+            instructionText: 'Drag bus stop A and bus stop B anywhere on the grid. Count the horizontal squares (run) and vertical squares (rise) between them. Can you find the straight-line distance?',
             canvasComponent: 'CoordinateGeometryCanvas',
-            canvasInitialState: { mode: 'distance', pointA: { x: -3, y: -2 }, pointB: { x: 1, y: 1 } },
+            canvasInitialState: { mode: 'distance', pointA: { x: 0, y: 0 }, pointB: { x: 3, y: 4 } },
+            guidedExample: {
+              intro: "Distance between two points can be tricky. Let's work through one example together on the canvas before you try it yourself.",
+              steps: [
+                {
+                  instruction: 'Drag point A to (0, 0) — the centre of the grid where the axes cross.',
+                  explanation: 'We always start by identifying the two points. (0, 0) is called the origin — it is where x = 0 and y = 0.',
+                },
+                {
+                  instruction: 'Now drag point B to (3, 4) — 3 squares right, 4 squares up.',
+                  explanation: 'The first number in a coordinate is always how far right (x), the second is how far up (y). So (3, 4) means: go 3 right, then 4 up.',
+                },
+                {
+                  instruction: 'Count the blue dashed squares going right from A to B. That is the "run" = 3.',
+                  explanation: 'The "run" is the horizontal distance — how far left or right you travel. Counting grid squares is the most reliable way to find it.',
+                },
+                {
+                  instruction: 'Now count the red dashed squares going up. That is the "rise" = 4.',
+                  explanation: 'The "rise" is the vertical distance — how far up or down you travel. Together, run and rise describe the two legs of a right triangle.',
+                },
+                {
+                  instruction: 'The straight-line distance is the hypotenuse of that triangle. Use a² + b² = c²: 3² + 4² = 9 + 16 = 25. So the distance = √25 = 5.',
+                  explanation: 'This is the Pythagorean theorem — the run and rise form the two legs of a right triangle, and the straight-line distance is always the hypotenuse.',
+                },
+              ],
+              completionMessage: 'You found it! A(0,0) to B(3,4) is a distance of 5 units — a classic 3-4-5 right triangle.',
+            },
             formativeCheck: {
-              prompt: 'Place A at (0, 0) and B at (3, 4). The run is 3 and rise is 4. What is the straight-line distance? (Hint: think Pythagoras)',
+              prompt: 'Now you try: move A to (0, 0) and B to (6, 8). What is the straight-line distance?',
               type: 'numeric',
-              correctAnswer: 5,
+              correctAnswer: 10,
               tolerance: 5,
             },
-            hint: 'The run, rise, and straight-line distance form a right triangle. You already know how to find the hypotenuse.',
+            hints: [
+              'You are looking for the straight-line distance — the shortest path directly from A to B, not going around the edges.',
+              'Count the run (horizontal squares) and rise (vertical squares) between the points. Then use the Pythagorean theorem: distance = √(run² + rise²).',
+              'run = 6, rise = 8. distance = √(6² + 8²) = √(36 + 64) = √100 = 10.',
+            ],
           },
           {
             phase: 'visual',
-            instructionText: 'The dashed lines show the right triangle hidden inside every diagonal distance. Watch the distance update as you drag the points.',
+            instructionText: 'The dashed lines now show the hidden right triangle. Watch how run, rise, and distance update as you drag the points.',
             canvasComponent: 'CoordinateGeometryCanvas',
             canvasInitialState: { mode: 'distance', pointA: { x: -3, y: -2 }, pointB: { x: 4, y: 3 } },
             formativeCheck: {
-              prompt: 'Points A(1, 1) and B(4, 5). What is the distance? (run=3, rise=4)',
+              prompt: 'Drag A to (1, 1) and B to (4, 5). What is the distance?',
               type: 'numeric',
               correctAnswer: 5,
               tolerance: 5,
             },
-            hint: 'd = √(run² + rise²) = √(3² + 4²) = √(9 + 16) = √25',
+            hints: [
+              'Look at the dashed lines — they show you the run (horizontal) and rise (vertical) automatically.',
+              'Read the run and rise labels on the canvas, then apply: distance = √(run² + rise²).',
+              'run = 3, rise = 4. distance = √(9 + 16) = √25 = 5.',
+            ],
           },
           {
             phase: 'abstract',
-            instructionText: 'd = √((x₂−x₁)² + (y₂−y₁)²). Drag the points and watch the formula populate live.',
+            instructionText: 'd = √((x₂−x₁)² + (y₂−y₁)²). Drag the points — watch the formula fill in with real numbers.',
             canvasComponent: 'CoordinateGeometryCanvas',
             canvasInitialState: { mode: 'distance', pointA: { x: -4, y: 1 }, pointB: { x: 2, y: -3 } },
             formativeCheck: {
@@ -377,7 +411,11 @@ export const geometryTopics: CurriculumTopic[] = [
               correctAnswer: 10,
               tolerance: 5,
             },
-            hint: 'run = 8−2 = 6, rise = 11−3 = 8. d = √(36 + 64) = √100',
+            hints: [
+              'You need the straight-line distance between (2, 3) and (8, 11). Use the distance formula.',
+              'Subtract the x-values: 8 − 2 = 6 (run). Subtract the y-values: 11 − 3 = 8 (rise). Now apply d = √(run² + rise²).',
+              'd = √(6² + 8²) = √(36 + 64) = √100 = 10.',
+            ],
           },
         ],
       },
@@ -394,9 +432,35 @@ export const geometryTopics: CurriculumTopic[] = [
         phases: [
           {
             phase: 'concrete',
-            instructionText: 'Drag points A and B. Estimate where the halfway point is by eye — place your guess on the grid.',
+            instructionText: 'Drag points A and B. The halfway point is exactly in the middle — count squares from each end to find it.',
             canvasComponent: 'CoordinateGeometryCanvas',
             canvasInitialState: { mode: 'midpoint', pointA: { x: -4, y: -2 }, pointB: { x: 4, y: 2 } },
+            guidedExample: {
+              intro: "Finding the halfway point between two coordinates is easier than it looks. Let's walk through it together.",
+              steps: [
+                {
+                  instruction: 'Drag A to (−4, 0) and B to (4, 0) — both on the x-axis.',
+                  explanation: 'Starting with points on the same line makes it easy to see what "halfway" means visually.',
+                },
+                {
+                  instruction: 'Count the total squares from A to B along the x-axis. You should count 8 squares.',
+                  explanation: 'The total distance between the points tells us how far apart they are. We need to split this distance in half.',
+                },
+                {
+                  instruction: 'Half of 8 is 4. Count 4 squares from A — you land on (0, 0). That is the midpoint.',
+                  explanation: 'The midpoint is always exactly half the distance from each endpoint. (−4 + 4) ÷ 2 = 0.',
+                },
+                {
+                  instruction: 'Now drag B up to (4, 4). Where do you think the midpoint moves?',
+                  explanation: 'When one point moves up, the midpoint moves up too — but only half as much. The midpoint tracks the average position of both points.',
+                },
+                {
+                  instruction: 'The midpoint is now (0, 2). Check: average of x-values = (−4+4)÷2 = 0. Average of y-values = (0+4)÷2 = 2.',
+                  explanation: 'The midpoint formula just averages the two x-coordinates and the two y-coordinates separately. Average = add them, divide by 2.',
+                },
+              ],
+              completionMessage: 'The midpoint is always the average of the two x-values and the average of the two y-values.',
+            },
             formativeCheck: {
               prompt: 'A is at (0, 0) and B is at (6, 4). What are the coordinates of the halfway point?',
               type: 'multiple-choice',
@@ -406,11 +470,15 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: '(2, 3)', correct: false },
               ],
             },
-            hint: 'The halfway point is directly between A and B — count squares from each end.',
+            hints: [
+              'You are looking for the point that is exactly halfway between A(0,0) and B(6,4) — equal distance from both.',
+              'Average the x-coordinates: (0 + 6) ÷ 2. Then average the y-coordinates: (0 + 4) ÷ 2. Those two results are your answer.',
+              'x: (0 + 6) ÷ 2 = 3. y: (0 + 4) ÷ 2 = 2. Midpoint = (3, 2).',
+            ],
           },
           {
             phase: 'visual',
-            instructionText: 'The green dot shows the midpoint. Watch it stay exactly halfway as you drag the endpoints.',
+            instructionText: 'The green dot shows the midpoint automatically. Drag A and B and watch it stay exactly halfway.',
             canvasComponent: 'CoordinateGeometryCanvas',
             canvasInitialState: { mode: 'midpoint', pointA: { x: -3, y: 1 }, pointB: { x: 5, y: -3 } },
             formativeCheck: {
@@ -422,6 +490,11 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: '(−2, 2)', correct: false },
               ],
             },
+            hints: [
+              'You need the point exactly halfway between (−2, 4) and (6, 0).',
+              'Average the x-values: (−2 + 6) ÷ 2. Average the y-values: (4 + 0) ÷ 2.',
+              'x: (−2 + 6) ÷ 2 = 4 ÷ 2 = 2. y: (4 + 0) ÷ 2 = 2. Midpoint = (2, 2).',
+            ],
           },
           {
             phase: 'abstract',
@@ -437,6 +510,11 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: '(−1, 3)', correct: false },
               ],
             },
+            hints: [
+              'You need the midpoint of a segment from (−6, 2) to (4, 8). Use M = ((x₁+x₂)/2, (y₁+y₂)/2).',
+              'x: (−6 + 4) ÷ 2 = ? y: (2 + 8) ÷ 2 = ?',
+              'x: (−6 + 4) ÷ 2 = −2 ÷ 2 = −1. y: (2 + 8) ÷ 2 = 10 ÷ 2 = 5. Midpoint = (−1, 5).',
+            ],
           },
         ],
       },
@@ -453,20 +531,50 @@ export const geometryTopics: CurriculumTopic[] = [
         phases: [
           {
             phase: 'concrete',
-            instructionText: 'Drag points A and B to set the trail path. Count the squares going up (rise) and the squares going right (run). What is rise ÷ run?',
+            instructionText: 'Drag points A and B to set the trail path. Count the squares up (rise) and right (run). Slope = rise ÷ run.',
             canvasComponent: 'CoordinateGeometryCanvas',
-            canvasInitialState: { mode: 'slope', pointA: { x: -3, y: -2 }, pointB: { x: 3, y: 2 } },
+            canvasInitialState: { mode: 'slope', pointA: { x: 0, y: 0 }, pointB: { x: 4, y: 2 } },
+            guidedExample: {
+              intro: "Slope measures steepness — how much a line rises for every step it moves right. Let's build that idea from scratch.",
+              steps: [
+                {
+                  instruction: 'Drag A to (0, 0) and B to (4, 0). This is a completely flat path.',
+                  explanation: 'A flat line has no rise at all. No matter how far you go right, you stay at the same height. Rise = 0, so slope = 0 ÷ anything = 0.',
+                },
+                {
+                  instruction: 'Now drag B up to (4, 2). The path now climbs. Count: how many squares right? How many squares up?',
+                  explanation: 'You moved B 4 squares right and 2 squares up. Every time you go 4 right, you go 2 up. That pattern is the slope.',
+                },
+                {
+                  instruction: 'Slope = rise ÷ run = 2 ÷ 4 = 0.5. For every 1 square right, the path rises 0.5 squares.',
+                  explanation: 'Slope is always rise divided by run. A slope of 0.5 means "for every metre forward, you go up half a metre" — a gentle hill.',
+                },
+                {
+                  instruction: 'Drag B to (4, 4). Now rise = 4, run = 4. What is the slope?',
+                  explanation: 'Slope = 4 ÷ 4 = 1. A slope of 1 means the path rises exactly 1 unit for every 1 unit forward — a 45° angle. Steeper than before.',
+                },
+                {
+                  instruction: 'Now drag B down to (4, −2). The path goes downhill. Rise is now negative: −2.',
+                  explanation: 'When a line goes downward from left to right, the rise is negative. Slope = −2 ÷ 4 = −0.5. Negative slope = going downhill.',
+                },
+              ],
+              completionMessage: 'Slope = rise ÷ run. Positive = uphill, negative = downhill, zero = flat. The bigger the number, the steeper the line.',
+            },
             formativeCheck: {
               prompt: 'A(0, 0) to B(4, 2): rise = 2, run = 4. What is the slope?',
               type: 'numeric',
               correctAnswer: 0.5,
               tolerance: 10,
             },
-            hint: 'Slope = rise ÷ run = how many squares up for every square right.',
+            hints: [
+              'Slope tells you how steep the line is — how many squares it goes up for every square it goes right.',
+              'Count the rise (squares up from A to B) and the run (squares right from A to B). Slope = rise ÷ run.',
+              'rise = 2 (B is 2 squares above A), run = 4 (B is 4 squares right of A). Slope = 2 ÷ 4 = 0.5.',
+            ],
           },
           {
             phase: 'visual',
-            instructionText: 'The dashed line extends the path. Steeper lines have larger slopes. A flat line has slope 0. A line going down has a negative slope.',
+            instructionText: 'The dashed line extends the path beyond A and B. Watch how the slope label changes — including going negative when the line points downward.',
             canvasComponent: 'CoordinateGeometryCanvas',
             canvasInitialState: { mode: 'slope', pointA: { x: -4, y: 2 }, pointB: { x: 2, y: -1 } },
             formativeCheck: {
@@ -475,15 +583,19 @@ export const geometryTopics: CurriculumTopic[] = [
               correctAnswer: -1,
               tolerance: 5,
             },
-            hint: 'Going down means the rise is negative. rise = 0−4 = −4, run = 4−0 = 4.',
+            hints: [
+              'The line is going downhill — B is lower than A — so the slope will be negative.',
+              'rise = y₂ − y₁ = 0 − 4 = −4. run = x₂ − x₁ = 4 − 0 = 4. Slope = rise ÷ run.',
+              'Slope = −4 ÷ 4 = −1. A slope of −1 means the line drops 1 unit for every 1 unit to the right.',
+            ],
           },
           {
             phase: 'abstract',
-            instructionText: 'm = (y₂−y₁) / (x₂−x₁). Drag the points and watch the slope formula update live.',
+            instructionText: 'm = (y₂−y₁) / (x₂−x₁). Drag the points — watch the formula fill in with real numbers.',
             canvasComponent: 'CoordinateGeometryCanvas',
             canvasInitialState: { mode: 'slope', pointA: { x: -3, y: -1 }, pointB: { x: 3, y: 3 } },
             formativeCheck: {
-              prompt: 'A ramp starts at (0, 0) and ends at (6, 2). A building code says ramps must have a slope ≤ 1/2. Does this ramp comply?',
+              prompt: 'A ramp starts at (0, 0) and ends at (6, 2). Building code says ramps must have slope ≤ 1/2. Does this ramp comply?',
               type: 'multiple-choice',
               choices: [
                 { label: 'Yes — slope = 1/3, which is less than 1/2', correct: true },
@@ -491,6 +603,11 @@ export const geometryTopics: CurriculumTopic[] = [
                 { label: 'Yes — slope = 2/6 = 1/2, exactly at the limit', correct: false },
               ],
             },
+            hints: [
+              'First calculate the slope of the ramp from (0,0) to (6,2). Then compare it to 1/2.',
+              'Slope = (y₂−y₁)/(x₂−x₁) = (2−0)/(6−0) = 2/6. Simplify 2/6. Is it ≤ 1/2?',
+              'Slope = 2/6 = 1/3. Is 1/3 ≤ 1/2? Yes — 1/3 is smaller than 1/2, so the ramp complies.',
+            ],
           },
         ],
       },

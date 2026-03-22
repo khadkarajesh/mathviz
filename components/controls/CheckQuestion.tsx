@@ -8,13 +8,18 @@ interface CheckQuestionProps {
   check: FormativeCheck;
   onPass: () => void;
   hint?: string;
+  hints?: string[]; // 3-level: [what to find, first step, full solution]
 }
 
-export function CheckQuestion({ check, onPass, hint }: CheckQuestionProps) {
+export function CheckQuestion({ check, onPass, hint, hints }: CheckQuestionProps) {
   const [value, setValue] = useState('');
   const [selected, setSelected] = useState<number | null>(null);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
-  const [showHint, setShowHint] = useState(false);
+  const [hintLevel, setHintLevel] = useState(0); // 0 = none shown, 1/2/3 = levels revealed
+
+  const allHints = hints ?? (hint ? [hint] : []);
+  const hasHints = allHints.length > 0;
+  const hintLabels = ['What am I looking for?', 'Show me the first step', 'Show me the full solution'];
 
   function handleNumericSubmit() {
     const num = parseFloat(value);
@@ -105,17 +110,8 @@ export function CheckQuestion({ check, onPass, hint }: CheckQuestionProps) {
         </div>
       )}
 
+      {/* Status row */}
       <div className="flex items-center justify-between mt-3">
-        {status === 'wrong' && hint && !showHint && (
-          <button
-            onClick={() => setShowHint(true)}
-            className="text-xs underline"
-            style={{ color: 'var(--primary)' }}
-          >
-            Show hint
-          </button>
-        )}
-        {showHint && <p className="text-xs italic" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
         {status === 'correct' && (
           <p className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>
             Correct! Moving on...
@@ -127,6 +123,42 @@ export function CheckQuestion({ check, onPass, hint }: CheckQuestionProps) {
           </p>
         )}
       </div>
+
+      {/* Progressive hints — only appear after a wrong attempt */}
+      {status === 'wrong' && hasHints && (
+        <div className="mt-3 flex flex-col gap-2">
+          {/* Revealed hint cards */}
+          {allHints.slice(0, hintLevel).map((h, i) => (
+            <div
+              key={i}
+              className="rounded-lg px-3 py-2 border-l-2 text-sm"
+              style={{
+                borderColor: i === 2 ? 'var(--secondary)' : i === 1 ? 'var(--primary)' : 'var(--accent)',
+                background: i === 2 ? 'rgba(255,101,132,0.06)' : i === 1 ? 'rgba(108,99,255,0.06)' : 'rgba(67,217,162,0.06)',
+                color: 'var(--text)',
+              }}
+            >
+              <p className="text-xs font-bold mb-0.5" style={{
+                color: i === 2 ? 'var(--secondary)' : i === 1 ? 'var(--primary)' : 'var(--accent)',
+              }}>
+                {hintLabels[i]}
+              </p>
+              <p>{h}</p>
+            </div>
+          ))}
+
+          {/* Next hint button */}
+          {hintLevel < allHints.length && (
+            <button
+              onClick={() => setHintLevel((l) => l + 1)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all self-start"
+              style={{ borderColor: 'var(--primary)', color: 'var(--primary)', background: 'rgba(108,99,255,0.06)' }}
+            >
+              {hintLabels[hintLevel]} →
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

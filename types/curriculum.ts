@@ -17,13 +17,26 @@ export interface FormativeCheck {
   choices?: { label: string; correct: boolean }[];
 }
 
+export interface GuidedStep {
+  instruction: string; // what to do on the canvas
+  explanation: string; // why — the concept being shown
+}
+
+export interface GuidedExample {
+  intro: string;        // "Before you try it, let's walk through one together"
+  steps: GuidedStep[];
+  completionMessage: string; // shown after last step before "Now you try"
+}
+
 export interface CPAPhaseConfig {
   phase: CPAPhase;
   instructionText: string;
   canvasComponent: string; // key in canvas registry
   canvasInitialState: Record<string, unknown>;
   formativeCheck: FormativeCheck;
-  hint?: string;
+  hint?: string;           // single hint (legacy / simple phases)
+  hints?: string[];        // 3-level progressive hints: what → first step → full solution
+  guidedExample?: GuidedExample;
 }
 
 export interface Lesson {

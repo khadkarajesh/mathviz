@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { CPAPhase, CPAPhaseConfig, Lesson } from '@/types/curriculum';
+import { CPAPhase, Lesson } from '@/types/curriculum';
 import { useLocalProgress } from '@/lib/hooks/useLocalProgress';
 import { CheckQuestion } from '@/components/controls/CheckQuestion';
 import { NarrativeFrame } from './NarrativeFrame';
+import { GuidedExample } from './GuidedExample';
 import { canvasRegistry } from '@/lib/curriculum/canvasRegistry';
 
 const PHASES: CPAPhase[] = ['concrete', 'visual', 'abstract'];
@@ -35,15 +36,20 @@ interface CPAStepperProps {
 export function CPAStepper({ lesson, subject }: CPAStepperProps) {
   const { markPhaseComplete, isPhaseComplete } = useLocalProgress();
   const [activePhase, setActivePhase] = useState<CPAPhase>(() => {
-    // start at first incomplete phase
     for (const p of PHASES) {
       if (!isPhaseComplete(lesson.id, p)) return p;
     }
     return 'abstract';
   });
+  // Track which phases the student has dismissed the guided example for
+  const [guidedDismissed, setGuidedDismissed] = useState<Partial<Record<CPAPhase, boolean>>>({});
 
   const phaseConfig = lesson.phases.find((p) => p.phase === activePhase)!;
   const activeIndex = PHASES.indexOf(activePhase);
+  const showGuided =
+    !!phaseConfig.guidedExample &&
+    !guidedDismissed[activePhase] &&
+    !isPhaseComplete(lesson.id, activePhase);
 
   function canAccessPhase(phase: CPAPhase): boolean {
     const idx = PHASES.indexOf(phase);
@@ -55,6 +61,10 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
     markPhaseComplete(lesson.id, lesson.topicId, activePhase);
     const next = PHASES[activeIndex + 1];
     if (next) setTimeout(() => setActivePhase(next), 400);
+  }
+
+  function handleGuidedComplete() {
+    setGuidedDismissed((prev) => ({ ...prev, [activePhase]: true }));
   }
 
   const CanvasComponent = canvasRegistry[phaseConfig.canvasComponent];
@@ -102,8 +112,25 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
         })}
       </div>
 
+      {/* Guided example — shown instead of normal layout when active */}
+      {showGuided && (
+        <GuidedExample
+          guided={phaseConfig.guidedExample!}
+          canvasSlot={
+            CanvasComponent ? (
+              <CanvasComponent
+                initialState={phaseConfig.canvasInitialState as never}
+                phase={activePhase}
+                readOnly={false}
+              />
+            ) : null
+          }
+          onComplete={handleGuidedComplete}
+        />
+      )}
+
       {/* Two-column layout: instruction + canvas, check below */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {!showGuided && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: instructions + formative check */}
         <div className="flex flex-col">
           <div
@@ -124,6 +151,7 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
           <CheckQuestion
             check={phaseConfig.formativeCheck}
             hint={phaseConfig.hint}
+            hints={phaseConfig.hints}
             onPass={handlePhasePass}
           />
 
@@ -173,7 +201,7 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
             </div>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
