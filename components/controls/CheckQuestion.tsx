@@ -1,16 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { FormativeCheck, ErrorPattern } from '@/types/curriculum';
 import { withinTolerance } from '@/lib/utils/formatters';
+import { diagnoseError } from '@/app/actions/generateProblem';
+import type { Problem } from '@/types/database';
+
+export interface AttemptData {
+  correct: boolean;
+  answerGiven?: number;
+  hintsUsed: number;
+  timeSeconds: number;
+  solutionRevealed: boolean;
+  aiErrorLabel?: string;
+}
 
 interface CheckQuestionProps {
   check: FormativeCheck;
   onPass: () => void;
-  onFail: () => void;      // called when student clicks "Got it" after solution reveal
-  hint?: string;           // phase-level hint (primary check only)
-  hints?: string[];        // phase-level 3-level hints (primary check only)
-  problemLabel?: string;   // e.g. "Problem 1 of 2"
+  onFail: () => void;
+  hint?: string;
+  hints?: string[];
+  problemLabel?: string;
+  // AI overrides — when provided, AI problem data replaces curriculum check data
+  aiProblem?: Problem | null;
+  onAttempt?: (data: AttemptData) => void;
 }
 
 export function CheckQuestion({
@@ -20,6 +34,8 @@ export function CheckQuestion({
   hint,
   hints,
   problemLabel,
+  aiProblem,
+  onAttempt,
 }: CheckQuestionProps) {
   const [value, setValue] = useState('');
   const [selected, setSelected] = useState<number | null>(null);
@@ -27,22 +43,30 @@ export function CheckQuestion({
   const [hintLevel, setHintLevel] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
   const [diagnosedError, setDiagnosedError] = useState<ErrorPattern | null>(null);
+  const [aiDiagnosis, setAIDiagnosis] = useState<{ label: string; explanation: string } | null>(null);
+  const [diagnosing, setDiagnosing] = useState(false);
+  const startTimeRef = useRef(Date.now());
 
-  // Merge check-level hints (extraChecks) with phase-level hints (primary check)
-  const allHints = check.hints ?? hints ?? (hint ? [hint] : []);
+  // Resolve display data — AI problem takes priority over curriculum check
+  const prompt         = aiProblem?.prompt ?? check.prompt;
+  const correctAnswer  = aiProblem != null ? (aiProblem.answer ?? undefined) : check.correctAnswer;
+  const allHints       = aiProblem?.hints ?? check.hints ?? hints ?? (hint ? [hint] : []);
+  const solutionText   = aiProblem?.solution ?? check.solutionReveal
+                         ?? (allHints.length > 0 ? allHints[allHints.length - 1] : null);
+
   const hintLabels = ['What am I looking for?', 'Show me the first step', 'Show me the full solution'];
 
-  // Solution text: explicit field first, then fall back to the last hint
-  const solutionText = check.solutionReveal ?? (allHints.length > 0 ? allHints[allHints.length - 1] : null);
-
-  // Show reveal button when: numeric, wrong, all hints shown, solution text available
   const showRevealButton =
     check.type === 'numeric' &&
     status === 'wrong' &&
     hintLevel >= allHints.length &&
     !!solutionText;
 
-  function diagnose(answer: number): ErrorPattern | null {
+  function elapsedSeconds() {
+    return Math.floor((Date.now() - startTimeRef.current) / 1000);
+  }
+
+  function diagnoseFromCurriculum(answer: number): ErrorPattern | null {
     return check.errorPatterns?.find((p) => p.match(answer)) ?? null;
   }
 
@@ -50,18 +74,40 @@ export function CheckQuestion({
     if (status === 'correct' || status === 'revealed') return;
     const num = parseFloat(value);
     if (isNaN(num)) return;
+
     const correct =
-      check.correctAnswer !== undefined
-        ? withinTolerance(num, check.correctAnswer, check.tolerance ?? 10)
+      correctAnswer !== undefined
+        ? withinTolerance(num, correctAnswer, check.tolerance ?? 10)
         : true;
+
     if (correct) {
-      setDiagnosedError(null);
       setStatus('correct');
+      const data: AttemptData = {
+        correct: true,
+        answerGiven: num,
+        hintsUsed: hintLevel,
+        timeSeconds: elapsedSeconds(),
+        solutionRevealed: false,
+        aiErrorLabel: undefined,
+      };
+      onAttempt?.(data);
       setTimeout(onPass, 800);
     } else {
-      setDiagnosedError(diagnose(num));
       setWrongCount((c) => c + 1);
       setStatus('wrong');
+
+      if (aiProblem && aiProblem.answer != null) {
+        // AI diagnosis — async, non-blocking
+        setDiagnosing(true);
+        diagnoseError(aiProblem.prompt, aiProblem.answer, num)
+          .then((result) => {
+            setAIDiagnosis(result);
+          })
+          .catch(() => {})
+          .finally(() => setDiagnosing(false));
+      } else {
+        setDiagnosedError(diagnoseFromCurriculum(num));
+      }
     }
   }
 
@@ -71,11 +117,33 @@ export function CheckQuestion({
     const correct = check.choices![idx].correct;
     if (correct) {
       setStatus('correct');
+      onAttempt?.({
+        correct: true,
+        hintsUsed: hintLevel,
+        timeSeconds: elapsedSeconds(),
+        solutionRevealed: false,
+      });
       setTimeout(onPass, 900);
     } else {
       setWrongCount((c) => c + 1);
       setStatus('wrong');
     }
+  }
+
+  function handleReveal() {
+    setStatus('revealed');
+  }
+
+  function handleGotIt() {
+    onAttempt?.({
+      correct: false,
+      answerGiven: value ? parseFloat(value) : undefined,
+      hintsUsed: hintLevel,
+      timeSeconds: elapsedSeconds(),
+      solutionRevealed: true,
+      aiErrorLabel: aiDiagnosis?.label,
+    });
+    onFail();
   }
 
   const borderColor =
@@ -89,7 +157,6 @@ export function CheckQuestion({
       className="rounded-xl border p-4 mt-4 transition-all"
       style={{ borderColor, background: 'var(--surface)' }}
     >
-      {/* Problem label */}
       {problemLabel && (
         <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>
           {problemLabel}
@@ -97,7 +164,7 @@ export function CheckQuestion({
       )}
 
       <p className="font-medium text-sm mb-3" style={{ color: 'var(--text)' }}>
-        {check.prompt}
+        {prompt}
       </p>
 
       {/* Numeric input */}
@@ -110,6 +177,7 @@ export function CheckQuestion({
               setValue(e.target.value);
               setStatus('idle');
               setDiagnosedError(null);
+              setAIDiagnosis(null);
             }}
             onKeyDown={(e) => e.key === 'Enter' && handleNumericSubmit()}
             disabled={status === 'correct'}
@@ -142,8 +210,8 @@ export function CheckQuestion({
               isSelected && status === 'wrong'   ? 'rgba(255,101,132,0.12)' :
               'var(--surface-2)';
             const border =
-              isSelected && status === 'correct' ? 'var(--accent)'     :
-              isSelected && status === 'wrong'   ? 'var(--secondary)'  :
+              isSelected && status === 'correct' ? 'var(--accent)'    :
+              isSelected && status === 'wrong'   ? 'var(--secondary)' :
               'var(--border)';
             return (
               <button
@@ -175,7 +243,7 @@ export function CheckQuestion({
             </p>
           </div>
           <button
-            onClick={onFail}
+            onClick={handleGotIt}
             className="w-full py-2 rounded-lg text-sm font-semibold transition-all border"
             style={{
               background: 'var(--surface-2)',
@@ -202,8 +270,29 @@ export function CheckQuestion({
         )}
       </div>
 
-      {/* Error diagnosis card — shown immediately when a named mistake is detected */}
-      {status === 'wrong' && diagnosedError && (
+      {/* AI error diagnosis */}
+      {status === 'wrong' && aiProblem && (
+        <div
+          className="mt-2 rounded-lg px-3 py-2 border-l-2"
+          style={{ borderColor: 'var(--statistics)', background: 'rgba(245,158,11,0.07)' }}
+        >
+          {diagnosing ? (
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Figuring out what went wrong...</p>
+          ) : aiDiagnosis ? (
+            <>
+              <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--statistics)' }}>
+                Looks like: {aiDiagnosis.label.replace(/_/g, ' ')}
+              </p>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {aiDiagnosis.explanation}
+              </p>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {/* Curriculum error diagnosis (non-AI fallback) */}
+      {status === 'wrong' && !aiProblem && diagnosedError && (
         <div
           className="mt-2 rounded-lg px-3 py-2 border-l-2"
           style={{ borderColor: 'var(--statistics)', background: 'rgba(245,158,11,0.07)' }}
@@ -217,7 +306,7 @@ export function CheckQuestion({
         </div>
       )}
 
-      {/* Progressive hints — only after a wrong attempt */}
+      {/* Progressive hints */}
       {status === 'wrong' && allHints.length > 0 && (
         <div className="mt-3 flex flex-col gap-2">
           {allHints.slice(0, hintLevel).map((h, i) => (
@@ -255,10 +344,10 @@ export function CheckQuestion({
         </div>
       )}
 
-      {/* "Show me the solution" — appears once all hints shown and still wrong */}
+      {/* Show solution button */}
       {showRevealButton && (
         <button
-          onClick={() => setStatus('revealed')}
+          onClick={handleReveal}
           className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all block"
           style={{
             borderColor: 'var(--secondary)',
@@ -270,7 +359,6 @@ export function CheckQuestion({
         </button>
       )}
 
-      {/* wrongCount counter (visible only when stuck with no hints available) */}
       {status === 'wrong' && wrongCount >= 2 && allHints.length === 0 && !showRevealButton && (
         <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
           Try approaching it differently — re-read the instruction above the canvas.

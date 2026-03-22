@@ -1,5 +1,11 @@
 {
   "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/refill-problems",
+      "schedule": "0 2 * * *"
+    }
+  ],
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",

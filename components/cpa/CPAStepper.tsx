@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CPAPhase, Lesson, FormativeCheck } from '@/types/curriculum';
 import { useLocalProgress } from '@/lib/hooks/useLocalProgress';
-import { CheckQuestion } from '@/components/controls/CheckQuestion';
+import { CheckQuestion, AttemptData } from '@/components/controls/CheckQuestion';
 import { NarrativeFrame } from './NarrativeFrame';
 import { GuidedExample } from './GuidedExample';
 import { PhaseBridge, PhaseBridgeTransition } from './PhaseBridge';
 import { canvasRegistry } from '@/lib/curriculum/canvasRegistry';
+import { getOrGenerateProblem } from '@/app/actions/generateProblem';
+import { recordAttempt, getWeakSpots } from '@/app/actions/progress';
+import type { Problem } from '@/types/database';
 
 const PHASES: CPAPhase[] = ['concrete', 'visual', 'abstract'];
 
@@ -45,19 +48,19 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
   });
 
   const [guidedDismissed, setGuidedDismissed] = useState<Partial<Record<CPAPhase, boolean>>>({});
-
-  // Multi-problem state — reset when phase changes via setActivePhase()
   const [checkIdx,    setCheckIdx]    = useState(0);
   const [passedCount, setPassedCount] = useState(0);
-
-  // Bridge state
   const [phaseBridgeActive,  setPhaseBridgeActive]  = useState(false);
   const [lessonBridgeActive, setLessonBridgeActive] = useState(false);
 
-  const phaseConfig  = lesson.phases.find((p) => p.phase === activePhase)!;
-  const activeIndex  = PHASES.indexOf(activePhase);
+  // AI problem state
+  const [aiProblem,      setAIProblem]      = useState<Problem | null>(null);
+  const [loadingProblem, setLoadingProblem] = useState(false);
+  const weaknessesRef = useRef<string[]>([]); // ref avoids re-triggering fetch effect
 
-  // All checks for the current phase: primary + extras
+  const phaseConfig = lesson.phases.find((p) => p.phase === activePhase)!;
+  const activeIndex = PHASES.indexOf(activePhase);
+
   const allChecks: FormativeCheck[] = [
     phaseConfig.formativeCheck,
     ...(phaseConfig.extraChecks ?? []),
@@ -67,7 +70,6 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
     ? `Problem ${checkIdx + 1} of ${allChecks.length}`
     : undefined;
 
-  // Hints: per-check overrides for extraChecks, phase-level for primary check
   const checkHints = currentCheck.hints ?? (checkIdx === 0 ? phaseConfig.hints : undefined);
   const checkHint  = checkIdx === 0 ? phaseConfig.hint : undefined;
 
@@ -78,6 +80,34 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
 
   const nextPhase = PHASES[activeIndex + 1] as CPAPhase | undefined;
 
+  // ── Fetch weak spots once on mount (stored in ref — no re-render side-effects)
+  useEffect(() => {
+    getWeakSpots(lesson.topicId, lesson.id, activePhase)
+      .then((w) => { weaknessesRef.current = w; })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Fetch AI problem when phase or check index changes ────────────────────
+  const fetchAIProblem = useCallback(() => {
+    let cancelled = false;
+    setAIProblem(null);
+    setLoadingProblem(true);
+
+    getOrGenerateProblem(lesson.topicId, lesson.id, activePhase, weaknessesRef.current)
+      .then((p) => { if (!cancelled) setAIProblem(p); })
+      .catch(() => { /* fall back to curriculum check silently */ })
+      .finally(() => { if (!cancelled) setLoadingProblem(false); });
+
+    return () => { cancelled = true; };
+  }, [activePhase, lesson.topicId, lesson.id]); // weaknessesRef is stable — no dependency needed
+
+  useEffect(() => {
+    const cancel = fetchAIProblem();
+    return cancel;
+  }, [fetchAIProblem]);
+
+  // ── Phase navigation ──────────────────────────────────────────────────────
   function setActivePhase(phase: CPAPhase) {
     setCheckIdx(0);
     setPassedCount(0);
@@ -91,18 +121,35 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
     return isPhaseComplete(lesson.id, PHASES[idx - 1]);
   }
 
-  // Called when a single check problem is passed
+  // ── Attempt recording ─────────────────────────────────────────────────────
+  function handleAttempt(data: AttemptData) {
+    if (!aiProblem) return;
+    recordAttempt({
+      problemId: aiProblem.id,
+      topicId: lesson.topicId,
+      lessonId: lesson.id,
+      phase: activePhase,
+      correct: data.correct,
+      answerGiven: data.answerGiven,
+      hintsUsed: data.hintsUsed,
+      timeSeconds: data.timeSeconds,
+      aiErrorLabel: data.aiErrorLabel,
+      solutionRevealed: data.solutionRevealed,
+    }).catch(console.error);
+  }
+
+  // ── Problem flow ──────────────────────────────────────────────────────────
   function handleCheckPass() {
     const newPassed = passedCount + 1;
     if (checkIdx < allChecks.length - 1) {
       setPassedCount(newPassed);
       setCheckIdx((i) => i + 1);
+      // fetchAIProblem will re-run via useEffect on checkIdx change
     } else {
       finishPhase(newPassed);
     }
   }
 
-  // Called when student exhausts hints and reveals solution (didn't pass this problem)
   function handleCheckFail() {
     if (checkIdx < allChecks.length - 1) {
       setCheckIdx((i) => i + 1);
@@ -112,7 +159,7 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
   }
 
   function finishPhase(finalPassed: number) {
-    void finalPassed; // tracked for future analytics; doesn't gate progress
+    void finalPassed;
     markPhaseComplete(lesson.id, lesson.topicId, activePhase);
     if (nextPhase) {
       setPhaseBridgeActive(true);
@@ -166,7 +213,7 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
         })}
       </div>
 
-      {/* Guided example — shown instead of normal layout when active */}
+      {/* Guided example */}
       {showGuided && (
         <GuidedExample
           guided={phaseConfig.guidedExample!}
@@ -200,7 +247,6 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
       {/* Normal two-column layout */}
       {!showGuided && !phaseBridgeActive && !lessonBridgeActive && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: instructions + formative check */}
           <div className="flex flex-col">
             <div
               className="rounded-xl border p-4 mb-4"
@@ -217,18 +263,34 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
               </p>
             </div>
 
-            {/* Multi-problem check — key resets state on problem change */}
-            <CheckQuestion
-              key={`${activePhase}-${checkIdx}`}
-              check={currentCheck}
-              onPass={handleCheckPass}
-              onFail={handleCheckFail}
-              hint={checkHint}
-              hints={checkHints}
-              problemLabel={problemLabel}
-            />
+            {/* Problem loading state */}
+            {loadingProblem && !aiProblem && (
+              <div
+                className="rounded-xl border p-4 mt-4 animate-pulse"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
+              >
+                <div className="h-3 rounded mb-3" style={{ background: 'var(--surface-2)', width: '60%' }} />
+                <div className="h-3 rounded mb-2" style={{ background: 'var(--surface-2)', width: '90%' }} />
+                <div className="h-3 rounded" style={{ background: 'var(--surface-2)', width: '75%' }} />
+              </div>
+            )}
 
-            {/* Lesson complete card — fallback when no phaseBridge defined */}
+            {/* Check question — shown once we have an AI problem or if AI is unavailable */}
+            {(!loadingProblem || aiProblem) && (
+              <CheckQuestion
+                key={`${activePhase}-${checkIdx}-${aiProblem?.id ?? 'curriculum'}`}
+                check={currentCheck}
+                onPass={handleCheckPass}
+                onFail={handleCheckFail}
+                hint={checkHint}
+                hints={checkHints}
+                problemLabel={problemLabel}
+                aiProblem={aiProblem}
+                onAttempt={handleAttempt}
+              />
+            )}
+
+            {/* Lesson complete fallback */}
             {isPhaseComplete(lesson.id, activePhase) &&
               activeIndex === PHASES.length - 1 &&
               !lesson.phaseBridge && (
@@ -246,7 +308,7 @@ export function CPAStepper({ lesson, subject }: CPAStepperProps) {
               )}
           </div>
 
-          {/* Right: interactive canvas */}
+          {/* Right: canvas */}
           <div
             className="rounded-xl border"
             style={{

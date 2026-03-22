@@ -7,9 +7,13 @@
     "build": "npm run validate && next build",
     "start": "next start",
     "lint": "eslint",
-    "validate": "tsx scripts/validate-curriculum.ts"
+    "validate": "tsx scripts/validate-curriculum.ts",
+    "seed-problems": "tsx scripts/seed-problems.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.99.3",
     "d3-interpolate": "^3.0.1",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
@@ -28,6 +32,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
